@@ -282,7 +282,7 @@ Public Property Get LastErrMessage() As String
 End Property
 
 
-Public Function getToken(ServiceID As String, access_id As String, scope As Collection) As LinkhubToken
+Public Function getToken(serviceID As String, access_id As String, scope As Collection) As LinkhubToken
     
     On Error GoTo errHandler
     
@@ -292,30 +292,29 @@ Public Function getToken(ServiceID As String, access_id As String, scope As Coll
     Dim postdata As String
     
     
-    Dim postObject As New Dictionary
+    Dim postObject
     
+    Set postObject = CreateObject("Scripting.Dictionary")
     postObject.Add "access_id", access_id
     postObject.Add "scope", scope
     
     postdata = toString(postObject)
     
     Set winhttp1 = CreateObject("WinHttp.WinHttpRequest.5.1")
-    Call winhttp1.Open("POST", ServiceURL + "/" + ServiceID + "/Token")
+    Call winhttp1.Open("POST", ServiceURL + "/" + serviceID + "/Token")
     
     Dim xdate As String
     xdate = Format(UTCTime, "yyyy-MM-ddTHH:mm:ss.sssZ")
     
     Call winhttp1.setRequestHeader("x-lh-date", xdate)
     Call winhttp1.setRequestHeader("x-lh-version", "1.0")
-    'Call winhttp1.setRequestHeader("x-lh-forwarded", "123.123.123.123")
     
     Dim target As String
     target = "POST" + Chr(10)
     target = target + Encode(MD5(ToUTF8(postdata)), edfBase64, efNoFolding) + Chr(10)
     target = target + xdate + Chr(10)
-    'target = target + "123.123.123.123" + Chr(10)
     target = target + "1.0" + Chr(10)
-    target = target + "/" + ServiceID + "/Token"
+    target = target + "/" + serviceID + "/Token"
     
     Dim Bearer As String
     Dim btKey
@@ -352,7 +351,7 @@ Public Function getToken(ServiceID As String, access_id As String, scope As Coll
     Set parsedDic = parse(Response)
         
     mlinkhubToken.session_token = parsedDic.Item("session_token")
-    mlinkhubToken.ServiceID = parsedDic.Item("serviceID")
+    mlinkhubToken.serviceID = parsedDic.Item("serviceID")
     mlinkhubToken.partnerID = parsedDic.Item("partnerID")
     mlinkhubToken.usercode = parsedDic.Item("usercode")
     mlinkhubToken.expiration = parsedDic.Item("expiration")
@@ -363,20 +362,20 @@ Public Function getToken(ServiceID As String, access_id As String, scope As Coll
     Exit Function
     
 errHandler:
-    m_LastErrCode = parsedDic.Item("code")
-    m_LastErrMessage = parsedDic.Item("message")
+    m_LastErrCode = -99999999
+    m_LastErrMessage = Err.Description
     
     Set getToken = Nothing
     
 End Function
 
-Public Function GetBalance(BearerToken As String, ServiceID As String) As Double
+Public Function GetBalance(BearerToken As String, serviceID As String) As Double
     On Error GoTo errHandler
      
     Dim winhttp1
     
     Set winhttp1 = CreateObject("WinHttp.WinHttpRequest.5.1")
-    Call winhttp1.Open("GET", ServiceURL + "/" + ServiceID + "/Point")
+    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/Point")
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
     
@@ -409,19 +408,19 @@ Public Function GetBalance(BearerToken As String, ServiceID As String) As Double
     
     Exit Function
 errHandler:
-    m_LastErrCode = parsedDic.Item("code")
-    m_LastErrMessage = parsedDic.Item("message")
+    m_LastErrCode = -99999999
+    m_LastErrMessage = Err.Description
     
-     GetBalance = m_LastErrCode
+    GetBalance = m_LastErrCode
 End Function
 
-Public Function GetPartnerBalance(BearerToken As String, ServiceID As String) As Double
+Public Function GetPartnerBalance(BearerToken As String, serviceID As String) As Double
     On Error GoTo errHandler
      
     Dim winhttp1
     
     Set winhttp1 = CreateObject("WinHttp.WinHttpRequest.5.1")
-    Call winhttp1.Open("GET", ServiceURL + "/" + ServiceID + "/PartnerPoint")
+    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/PartnerPoint")
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
     
@@ -454,10 +453,10 @@ Public Function GetPartnerBalance(BearerToken As String, ServiceID As String) As
     
     Exit Function
 errHandler:
-    m_LastErrCode = parsedDic.Item("code")
-    m_LastErrMessage = parsedDic.Item("message")
+    m_LastErrCode = -99999999
+    m_LastErrMessage = Err.Description
     
-     GetPartnerBalance = m_LastErrCode
+    GetPartnerBalance = m_LastErrCode
 End Function
 
 Private Function UTCTime() As Date
