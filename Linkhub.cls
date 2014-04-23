@@ -253,7 +253,7 @@ Private Declare Sub GetSystemTime Lib "kernel32" (lpSystemTime As SYSTEMTIME)
 ''''''''''''''''''''''''''end of win32''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Private Const ServiceURL = "https://auth.linkhub.co.kr"
-Private m_isTest As Boolean
+Private m_IsTest As Boolean
 Private m_partnerID As String
 Private m_secretKey As String
 
@@ -262,7 +262,7 @@ Private m_LastErrMessage As String
 
 
 
-Public Property Let partnerID(ByVal value As String)
+Public Property Let PartnerID(ByVal value As String)
     m_partnerID = value
 End Property
 
@@ -271,7 +271,7 @@ Public Property Let SercetKey(ByVal value As String)
 End Property
 
 Public Property Let IsTest(ByVal value As Boolean)
-    m_isTest = value
+    m_IsTest = value
 End Property
 
 Public Property Get LastErrCode() As Long
@@ -284,7 +284,7 @@ End Property
 
 Public Function getToken(serviceID As String, access_id As String, scope As Collection) As LinkhubToken
     
-    On Error GoTo errHandler
+    On Error GoTo ErrHandler
     
     Dim mlinkhubToken As New LinkhubToken
     
@@ -352,7 +352,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
         
     mlinkhubToken.session_token = parsedDic.Item("session_token")
     mlinkhubToken.serviceID = parsedDic.Item("serviceID")
-    mlinkhubToken.partnerID = parsedDic.Item("partnerID")
+    mlinkhubToken.PartnerID = parsedDic.Item("partnerID")
     mlinkhubToken.usercode = parsedDic.Item("usercode")
     mlinkhubToken.expiration = parsedDic.Item("expiration")
     mlinkhubToken.ipaddress = parsedDic.Item("ipaddress")
@@ -361,7 +361,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     Set getToken = mlinkhubToken
     Exit Function
     
-errHandler:
+ErrHandler:
     m_LastErrCode = -99999999
     m_LastErrMessage = Err.Description
     
@@ -370,7 +370,7 @@ errHandler:
 End Function
 
 Public Function GetBalance(BearerToken As String, serviceID As String) As Double
-    On Error GoTo errHandler
+    On Error GoTo ErrHandler
      
     Dim winhttp1
     
@@ -407,15 +407,16 @@ Public Function GetBalance(BearerToken As String, serviceID As String) As Double
     GetBalance = CDbl(parsedDic.Item("remainPoint"))
     
     Exit Function
-errHandler:
+ErrHandler:
     m_LastErrCode = -99999999
     m_LastErrMessage = Err.Description
     
     GetBalance = m_LastErrCode
 End Function
 
+
 Public Function GetPartnerBalance(BearerToken As String, serviceID As String) As Double
-    On Error GoTo errHandler
+    On Error GoTo ErrHandler
      
     Dim winhttp1
     
@@ -452,19 +453,18 @@ Public Function GetPartnerBalance(BearerToken As String, serviceID As String) As
     GetPartnerBalance = CDbl(parsedDic.Item("remainPoint"))
     
     Exit Function
-errHandler:
+ErrHandler:
     m_LastErrCode = -99999999
     m_LastErrMessage = Err.Description
     
     GetPartnerBalance = m_LastErrCode
 End Function
 
-Private Function UTCTime() As Date
+Public Function UTCTime() As Date
     Dim T As SYSTEMTIME
     GetSystemTime T
     UTCTime = DateSerial(T.wYear, T.wMonth, T.wDay) + TimeSerial(T.wHour, T.wMinute, T.wSecond) + T.wMilliseconds / 86400000#
 End Function
-
 
 Public Function Decode( _
     ByVal Encoded As String, _
