@@ -29,8 +29,8 @@ Attribute VB_Exposed = False
 ' (which is from http://www.ediy.co.nz/vbjson-json-parser-library-in-vb6-xidc55680.html)
 ' For the License...
 '
-' And cStringBuilder.cls is from Steve McMahon(steve@vbaccelerator.com)'s. It speed up
-' json String processing.
+' And cStringBuilder.cls is from Steve McMahon(steve@vbaccelerator.com)'s. It's for
+' speed enhancement to json String processing.
 '
 '=================================================================================
 Option Explicit
