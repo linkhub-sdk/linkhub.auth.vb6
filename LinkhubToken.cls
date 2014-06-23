@@ -15,7 +15,7 @@ Option Explicit
 
 Public session_token As String
 Public serviceID As String
-Public partnerID As String
+Public linkID As String
 Public usercode As String
 Public expiration As String
 Public ipaddress As String

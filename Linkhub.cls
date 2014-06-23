@@ -254,7 +254,7 @@ Private Declare Sub GetSystemTime Lib "kernel32" (lpSystemTime As SYSTEMTIME)
 
 Private Const ServiceURL = "https://auth.linkhub.co.kr"
 Private m_IsTest As Boolean
-Private m_partnerID As String
+Private m_linkID As String
 Private m_secretKey As String
 
 Private m_LastErrCode As Long
@@ -262,8 +262,8 @@ Private m_LastErrMessage As String
 
 
 
-Public Property Let PartnerID(ByVal value As String)
-    m_partnerID = value
+Public Property Let linkID(ByVal value As String)
+    m_linkID = value
 End Property
 
 Public Property Let SercetKey(ByVal value As String)
@@ -323,7 +323,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     InitHmac (btKey)
     Bearer = Encode(HmacSha1(ToUTF8(target)), edfBase64)
     
-    Call winhttp1.setRequestHeader("Authorization", "LINKHUB " + m_partnerID + " " + Bearer)
+    Call winhttp1.setRequestHeader("Authorization", "LINKHUB " + m_linkID + " " + Bearer)
     
     winhttp1.send (postdata)
     winhttp1.WaitForResponse
@@ -352,7 +352,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
         
     mlinkhubToken.session_token = parsedDic.Item("session_token")
     mlinkhubToken.serviceID = parsedDic.Item("serviceID")
-    mlinkhubToken.PartnerID = parsedDic.Item("partnerID")
+    mlinkhubToken.linkID = parsedDic.Item("linkID")
     mlinkhubToken.usercode = parsedDic.Item("usercode")
     mlinkhubToken.expiration = parsedDic.Item("expiration")
     mlinkhubToken.ipaddress = parsedDic.Item("ipaddress")
