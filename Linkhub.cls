@@ -281,6 +281,47 @@ Public Property Get LastErrMessage() As String
     LastErrMessage = m_LastErrMessage
 End Property
 
+Public Function GetTime() As String
+On Error GoTo ErrHandler
+   
+    Dim winhttp1
+        
+    Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
+    Call winhttp1.Open("GET", ServiceURL + "/Time", False)
+           
+    winhttp1.Send
+    
+    
+    
+    Dim Response As String
+    Response = winhttp1.responseText
+    
+    Dim parsedDic As Object
+    
+    If winhttp1.Status <> 200 Then
+    
+        Set parsedDic = parse(Response)
+        
+        m_LastErrCode = parsedDic.Item("code")
+        m_LastErrMessage = parsedDic.Item("message")
+        
+        GetTime = m_LastErrCode
+        
+        Exit Function
+        
+    End If
+    
+    Set winhttp1 = Nothing
+                
+    GetTime = Response
+    
+    Exit Function
+ErrHandler:
+    m_LastErrCode = -99999999
+    m_LastErrMessage = Err.Description
+    
+    GetTime = m_LastErrCode
+End Function
 
 Public Function getToken(serviceID As String, access_id As String, scope As Collection) As LinkhubToken
     
@@ -290,9 +331,10 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     
     Dim winhttp1
     Dim postdata As String
-    
+    Dim xDate As String
     
     Dim postObject
+    xDate = GetTime()
     
     Set postObject = CreateObject("Scripting.Dictionary")
     postObject.Add "access_id", access_id
@@ -300,19 +342,16 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     
     postdata = toString(postObject)
     
-    Set winhttp1 = CreateObject("WinHttp.WinHttpRequest.5.1")
-    Call winhttp1.Open("POST", ServiceURL + "/" + serviceID + "/Token")
-    
-    Dim xdate As String
-    xdate = Format(UTCTime, "yyyy-MM-ddTHH:mm:ss.sssZ")
-    
-    Call winhttp1.setRequestHeader("x-lh-date", xdate)
+    Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
+    Call winhttp1.Open("POST", ServiceURL + "/" + serviceID + "/Token", False)
+         
+    Call winhttp1.setRequestHeader("x-lh-date", xDate)
     Call winhttp1.setRequestHeader("x-lh-version", "1.0")
-    
+         
     Dim target As String
     target = "POST" + Chr(10)
     target = target + Encode(MD5(ToUTF8(postdata)), edfBase64, efNoFolding) + Chr(10)
-    target = target + xdate + Chr(10)
+    target = target + xDate + Chr(10)
     target = target + "1.0" + Chr(10)
     target = target + "/" + serviceID + "/Token"
     
@@ -325,8 +364,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     
     Call winhttp1.setRequestHeader("Authorization", "LINKHUB " + m_linkID + " " + Bearer)
     
-    winhttp1.send (postdata)
-    winhttp1.WaitForResponse
+    winhttp1.Send (postdata)
     
     Dim Response As String
     Response = winhttp1.responseText
@@ -374,18 +412,19 @@ Public Function GetBalance(BearerToken As String, serviceID As String) As Double
      
     Dim winhttp1
     
-    Set winhttp1 = CreateObject("WinHttp.WinHttpRequest.5.1")
-    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/Point")
+    Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
+    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/Point", False)
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
-    
-    winhttp1.send
-    winhttp1.WaitForResponse
-    
+    Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
+    winhttp1.Send
+        
     Dim Response As String
     Response = winhttp1.responseText
        
     Dim parsedDic As Object
+    
+    'Call winhttp1.getResponseHeaders
     
     If winhttp1.Status <> 200 Then
     
@@ -420,14 +459,14 @@ Public Function GetPartnerBalance(BearerToken As String, serviceID As String) As
      
     Dim winhttp1
     
-    Set winhttp1 = CreateObject("WinHttp.WinHttpRequest.5.1")
-    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/PartnerPoint")
+    Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
+    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/PartnerPoint", False)
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
+    Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
     
-    winhttp1.send
-    winhttp1.WaitForResponse
-    
+    winhttp1.Send
+        
     Dim Response As String
     Response = winhttp1.responseText
        
@@ -458,12 +497,6 @@ ErrHandler:
     m_LastErrMessage = Err.Description
     
     GetPartnerBalance = m_LastErrCode
-End Function
-
-Public Function UTCTime() As Date
-    Dim T As SYSTEMTIME
-    GetSystemTime T
-    UTCTime = DateSerial(T.wYear, T.wMonth, T.wDay) + TimeSerial(T.wHour, T.wMinute, T.wSecond) + T.wMilliseconds / 86400000#
 End Function
 
 Public Function Decode( _
