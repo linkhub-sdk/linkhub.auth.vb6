@@ -22,6 +22,8 @@ Attribute VB_Exposed = False
 ' http://www.linkhub.co.kr
 ' Author : Kim Seongjun (pallet027@gmail.com)
 ' Written : 2014-04-22
+' Contributor : Jeong Yohan (code@linkhub.co.kr)
+' Updated : 2017-08-30
 '
 ' Thanks for your interest.
 '
@@ -262,7 +264,7 @@ Private m_LastErrMessage As String
 
 
 
-Public Property Let linkID(ByVal value As String)
+Public Property Let LinkID(ByVal value As String)
     m_linkID = value
 End Property
 
@@ -390,7 +392,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
         
     mlinkhubToken.session_token = parsedDic.Item("session_token")
     mlinkhubToken.serviceID = parsedDic.Item("serviceID")
-    mlinkhubToken.linkID = parsedDic.Item("linkID")
+    mlinkhubToken.LinkID = parsedDic.Item("linkID")
     mlinkhubToken.usercode = parsedDic.Item("usercode")
     mlinkhubToken.expiration = parsedDic.Item("expiration")
     mlinkhubToken.ipaddress = parsedDic.Item("ipaddress")
@@ -405,6 +407,51 @@ ErrHandler:
     
     Set getToken = Nothing
     
+End Function
+
+'파트너 포인트 충전 URL - 2017/08/30 추가
+Public Function GetPartnerURL(BearerToken As String, serviceID As String, TOGO As String) As String
+    On Error GoTo ErrHandler
+     
+    Dim winhttp1
+    
+    Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
+    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/URL?TG=" + TOGO, False)
+    
+    Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
+    Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
+    winhttp1.Send
+        
+    Dim Response As String
+    Response = winhttp1.responseText
+       
+    Dim parsedDic As Object
+        
+    If winhttp1.Status <> 200 Then
+    
+        Set parsedDic = parse(Response)
+        
+        m_LastErrCode = parsedDic.Item("code")
+        m_LastErrMessage = parsedDic.Item("message")
+        
+        GetPartnerURL = m_LastErrCode
+        
+        Exit Function
+        
+    End If
+    
+    Set winhttp1 = Nothing
+    
+    Set parsedDic = parse(Response)
+    
+    GetPartnerURL = parsedDic.Item("url")
+    
+    Exit Function
+ErrHandler:
+    m_LastErrCode = -99999999
+    m_LastErrMessage = Err.Description
+    
+    GetPartnerURL = m_LastErrCode
 End Function
 
 Public Function GetBalance(BearerToken As String, serviceID As String) As Double
