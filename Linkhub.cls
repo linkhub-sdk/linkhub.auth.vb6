@@ -325,7 +325,7 @@ ErrHandler:
     GetTime = m_LastErrCode
 End Function
 
-Public Function getToken(serviceID As String, access_id As String, scope As Collection) As LinkhubToken
+Public Function getToken(serviceID As String, access_id As String, scope As Collection, Optional ForwardIP As String = "") As LinkhubToken
     
     On Error GoTo ErrHandler
     
@@ -350,10 +350,19 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     Call winhttp1.setRequestHeader("x-lh-date", xDate)
     Call winhttp1.setRequestHeader("x-lh-version", "1.0")
          
+    If ForwardIP <> "" Then
+        Call winhttp1.setRequestHeader("x-lh-forwarded", ForwardIP)
+    End If
+    
     Dim target As String
     target = "POST" + Chr(10)
     target = target + Encode(MD5(ToUTF8(postdata)), edfBase64, efNoFolding) + Chr(10)
     target = target + xDate + Chr(10)
+    
+    If ForwardIP <> "" Then
+        target = target + ForwardIP + Chr(10)
+    End If
+    
     target = target + "1.0" + Chr(10)
     target = target + "/" + serviceID + "/Token"
     
