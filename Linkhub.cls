@@ -255,6 +255,8 @@ Private Declare Sub GetSystemTime Lib "kernel32" (lpSystemTime As SYSTEMTIME)
 ''''''''''''''''''''''''''end of win32''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 Private Const ServiceURL = "https://auth.linkhub.co.kr"
+Private Const ServiceURL_Static = "https://static-auth.linkhub.co.kr"
+Private Const ServiceURL_GA = "https://ga-auth.linkhub.co.kr"
 Private m_IsTest As Boolean
 Private m_linkID As String
 Private m_secretKey As String
@@ -283,13 +285,23 @@ Public Property Get LastErrMessage() As String
     LastErrMessage = m_LastErrMessage
 End Property
 
-Public Function GetTime() As String
+Private Function getTargetURL(UseStaticIP As Boolean, UseGAIP As Boolean) As String
+    If UseGAIP Then
+      getTargetURL = ServiceURL_GA
+    ElseIf UseStaticIP Then
+      getTargetURL = ServiceURL_Static
+    Else
+      getTargetURL = ServiceURL
+    End If
+End Function
+
+Public Function GetTime(UseStaticIP As Boolean, UseGAIP As Boolean) As String
 On Error GoTo ErrHandler
    
     Dim winhttp1
         
     Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
-    Call winhttp1.Open("GET", ServiceURL + "/Time", False)
+    Call winhttp1.Open("GET", getTargetURL(UseStaticIP, UseGAIP) + "/Time", False)
            
     winhttp1.Send
     
@@ -325,7 +337,7 @@ ErrHandler:
     GetTime = m_LastErrCode
 End Function
 
-Public Function getToken(serviceID As String, access_id As String, scope As Collection, Optional ForwardIP As String = "") As LinkhubToken
+Public Function getToken(serviceID As String, access_id As String, scope As Collection, ForwardIP As String, UseStaticIP As Boolean, UseGAIP As Boolean) As LinkhubToken
     
     On Error GoTo ErrHandler
     
@@ -336,7 +348,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     Dim xDate As String
     
     Dim postObject
-    xDate = GetTime()
+    xDate = GetTime(UseStaticIP, UseGAIP)
     
     Set postObject = CreateObject("Scripting.Dictionary")
     postObject.Add "access_id", access_id
@@ -345,7 +357,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     postdata = toString(postObject)
     
     Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
-    Call winhttp1.Open("POST", ServiceURL + "/" + serviceID + "/Token", False)
+    Call winhttp1.Open("POST", getTargetURL(UseStaticIP, UseGAIP) + "/" + serviceID + "/Token", False)
          
     Call winhttp1.setRequestHeader("x-lh-date", xDate)
     Call winhttp1.setRequestHeader("x-lh-version", "1.0")
@@ -419,13 +431,13 @@ ErrHandler:
 End Function
 
 '파트너 포인트 충전 URL - 2017/08/30 추가
-Public Function GetPartnerURL(BearerToken As String, serviceID As String, TOGO As String) As String
+Public Function GetPartnerURL(BearerToken As String, serviceID As String, TOGO As String, UseStaticIP As Boolean, UseGAIP As Boolean) As String
     On Error GoTo ErrHandler
      
     Dim winhttp1
     
     Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
-    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/URL?TG=" + TOGO, False)
+    Call winhttp1.Open("GET", getTargetURL(UseStaticIP, UseGAIP) + "/" + serviceID + "/URL?TG=" + TOGO, False)
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
     Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
@@ -463,13 +475,13 @@ ErrHandler:
     GetPartnerURL = m_LastErrCode
 End Function
 
-Public Function GetBalance(BearerToken As String, serviceID As String) As Double
+Public Function GetBalance(BearerToken As String, serviceID As String, UseStaticIP As Boolean, UseGAIP As Boolean) As Double
     On Error GoTo ErrHandler
      
     Dim winhttp1
     
     Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
-    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/Point", False)
+    Call winhttp1.Open("GET", getTargetURL(UseStaticIP, UseGAIP) + "/" + serviceID + "/Point", False)
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
     Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
@@ -510,13 +522,13 @@ ErrHandler:
 End Function
 
 
-Public Function GetPartnerBalance(BearerToken As String, serviceID As String) As Double
+Public Function GetPartnerBalance(BearerToken As String, serviceID As String, UseStaticIP As Boolean, UseGAIP As Boolean) As Double
     On Error GoTo ErrHandler
      
     Dim winhttp1
     
     Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
-    Call winhttp1.Open("GET", ServiceURL + "/" + serviceID + "/PartnerPoint", False)
+    Call winhttp1.Open("GET", getTargetURL(UseStaticIP, UseGAIP) + "/" + serviceID + "/PartnerPoint", False)
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
     Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
