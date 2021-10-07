@@ -23,7 +23,7 @@ Attribute VB_Exposed = False
 ' Author : Kim Seongjun (pallet027@gmail.com)
 ' Written : 2014-04-22
 ' Contributor : Jeong Yohan (code@linkhub.co.kr)
-' Updated : 2017-08-30
+' Updated : 2021-10-07
 '
 ' Thanks for your interest.
 '
@@ -295,8 +295,21 @@ Private Function getTargetURL(UseStaticIP As Boolean, UseGAIP As Boolean) As Str
     End If
 End Function
 
-Public Function GetTime(UseStaticIP As Boolean, UseGAIP As Boolean) As String
+Public Function GetTime(UseStaticIP As Boolean, UseGAIP As Boolean, UseLocalTimeYN As Boolean) As String
 On Error GoTo ErrHandler
+    If (UseLocalTimeYN) Then
+        
+        Dim dt As Object
+        Dim setUTC As Date
+        
+        Set dt = CreateObject("WbemScripting.SWbemDateTime")
+        dt.SetVarDate Now
+        setUTC = dt.GetVarDate(False)
+        
+        GetTime = Format(setUTC, "yyyy-mm-ddTHH:mm:ssZ")
+        
+        Exit Function
+    End If
    
     Dim winhttp1
         
@@ -337,7 +350,7 @@ ErrHandler:
     GetTime = m_LastErrCode
 End Function
 
-Public Function getToken(serviceID As String, access_id As String, scope As Collection, ForwardIP As String, UseStaticIP As Boolean, UseGAIP As Boolean) As LinkhubToken
+Public Function getToken(serviceID As String, access_id As String, scope As Collection, ForwardIP As String, UseStaticIP As Boolean, UseGAIP As Boolean, UseLocalTimeYN As Boolean) As LinkhubToken
     
     On Error GoTo ErrHandler
     
@@ -348,7 +361,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     Dim xDate As String
     
     Dim postObject
-    xDate = GetTime(UseStaticIP, UseGAIP)
+    xDate = GetTime(UseStaticIP, UseGAIP, UseLocalTimeYN)
     
     Set postObject = CreateObject("Scripting.Dictionary")
     postObject.Add "access_id", access_id
@@ -844,6 +857,56 @@ Private Sub InitHmac(ByRef key() As Byte)
         End If
     End If
 End Sub
+
+Public Function SHA1(ByRef Data() As Byte) As Byte()
+    Dim hHash As Long
+    Dim lngDataLen As Long
+    Dim lngHashSize As Long
+    Dim bytHashValue() As Byte
+    
+    If hBaseProvider = 0 Then
+        Err.Raise vbObjectError Or &HD352&, _
+                  "HS1.SHA1", _
+                  "No cryptographic Base provider context"
+    ElseIf CryptCreateHash(hBaseProvider, CALG_SHA1, 0&, 0&, hHash) = 0 Then
+        Err.Raise vbObjectError Or &HD354&, _
+                  "HS1.SHA1", _
+                  "Failed to create CryptoAPI Hash object, system error " _
+                & CStr(Err.LastDllError)
+    ElseIf CryptHashData(hHash, _
+                         Data(LBound(Data)), _
+                         UBound(Data) - LBound(Data) + 1, _
+                         0&) = 0 Then
+        CryptDestroyHash hHash
+        Err.Raise vbObjectError Or &HD356&, _
+                  "HS1.SHA1", _
+                  "Failed to hash data, system error " _
+                & CStr(Err.LastDllError)
+    Else
+        lngDataLen = 4 '4 bytes for Long length.
+        If CryptGetHashParam(hHash, HP_HASHSIZE, lngHashSize, lngDataLen, 0&) = 0 Then
+            CryptDestroyHash hHash
+            Err.Raise vbObjectError Or &HD358&, _
+                      "HS1.SHA1", _
+                      "Failed to obtain hash value length, system error " _
+                    & CStr(Err.LastDllError)
+        Else
+            lngDataLen = lngHashSize
+            ReDim bytHashValue(lngDataLen - 1)
+            
+            If CryptGetHashParam(hHash, HP_HASHVAL, bytHashValue(0), lngDataLen, 0&) = 0 Then
+                CryptDestroyHash hHash
+                Err.Raise vbObjectError Or &HD35A&, _
+                          "HS1.SHA1", _
+                          "Failed to obtain hash value, system error " _
+                        & CStr(Err.LastDllError)
+            Else
+                CryptDestroyHash hHash
+                SHA1 = bytHashValue
+            End If
+        End If
+    End If
+End Function
 
 Private Function MD5(ByRef Data() As Byte) As Byte()
     Dim hHash As Long
