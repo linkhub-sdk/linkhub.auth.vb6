@@ -23,7 +23,7 @@ Attribute VB_Exposed = False
 ' Author : Kim Seongjun (pallet027@gmail.com)
 ' Written : 2014-04-22
 ' Contributor : Jeong Yohan (code@linkhub.co.kr)
-' Updated : 2021-10-07
+' Updated : 2021-10-13
 '
 ' Thanks for your interest.
 '
@@ -37,6 +37,7 @@ Attribute VB_Exposed = False
 '=================================================================================
 Option Explicit
 
+Const API_VERSION       As String = "2.0"
 
 '''''''''' for json''''''''''''''''''
 Const INVALID_JSON      As Long = 1
@@ -56,13 +57,21 @@ Private Const CP_UTF8 As Long = 65001
 Private Const CALG_RC2                   As Long = &H6602&
 Private Const CALG_MD5                   As Long = &H8003&
 Private Const CALG_SHA1                  As Long = &H8004&
+Private Const CALG_SHA256                As Long = &H800C&
 Private Const CALG_HMAC                  As Long = &H8009&
 
 Private Const PROV_RSA_FULL              As Long = 1
 Private Const PROV_RSA_AES               As Long = 24
 Private Const CRYPT_VERIFYCONTEXT        As Long = &HF0000000
+
 Private Const MS_DEFAULT_PROVIDER        As String = _
     "Microsoft Base Cryptographic Provider v1.0"
+    
+Private Const MS_ENH_RSA_AED_XP     As String = _
+    "Microsoft Enhanced RSA and AES Cryptographic Provider (Prototype)"
+    
+Private Const MS_ENH_RSA_AED_PROV        As String = _
+    "Microsoft Enhanced RSA and AES Cryptographic Provider"
 
 Private Const HP_HASHVAL                 As Long = 2
 Private Const HP_HASHSIZE                As Long = 4
@@ -266,7 +275,7 @@ Private m_LastErrMessage As String
 
 
 
-Public Property Let LinkID(ByVal value As String)
+Public Property Let linkID(ByVal value As String)
     m_linkID = value
 End Property
 
@@ -357,7 +366,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     Dim mlinkhubToken As New LinkhubToken
     
     Dim winhttp1
-    Dim postdata As String
+    Dim postData As String
     Dim xDate As String
     
     Dim postObject
@@ -367,13 +376,13 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     postObject.Add "access_id", access_id
     postObject.Add "scope", scope
     
-    postdata = toString(postObject)
+    postData = toString(postObject)
     
     Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
     Call winhttp1.Open("POST", getTargetURL(UseStaticIP, UseGAIP) + "/" + serviceID + "/Token", False)
          
     Call winhttp1.setRequestHeader("x-lh-date", xDate)
-    Call winhttp1.setRequestHeader("x-lh-version", "1.0")
+    Call winhttp1.setRequestHeader("x-lh-version", API_VERSION)
          
     If ForwardIP <> "" Then
         Call winhttp1.setRequestHeader("x-lh-forwarded", ForwardIP)
@@ -381,14 +390,14 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     
     Dim target As String
     target = "POST" + Chr(10)
-    target = target + Encode(MD5(ToUTF8(postdata)), edfBase64, efNoFolding) + Chr(10)
+    target = target + Encode(SHA256(ToUTF8(postData)), edfBase64, efNoFolding) + Chr(10)
     target = target + xDate + Chr(10)
     
     If ForwardIP <> "" Then
         target = target + ForwardIP + Chr(10)
     End If
     
-    target = target + "1.0" + Chr(10)
+    target = target + API_VERSION + Chr(10)
     target = target + "/" + serviceID + "/Token"
     
     Dim Bearer As String
@@ -396,11 +405,11 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
     
     btKey = Decode(m_secretKey, edfBase64)
     InitHmac (btKey)
-    Bearer = Encode(HmacSha1(ToUTF8(target)), edfBase64)
+    Bearer = Encode(HmacSha256(ToUTF8(target)), edfBase64)
     
     Call winhttp1.setRequestHeader("Authorization", "LINKHUB " + m_linkID + " " + Bearer)
     
-    winhttp1.Send (postdata)
+    winhttp1.Send (postData)
     
     Dim Response As String
     Response = winhttp1.responseText
@@ -426,7 +435,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
         
     mlinkhubToken.session_token = parsedDic.Item("session_token")
     mlinkhubToken.serviceID = parsedDic.Item("serviceID")
-    mlinkhubToken.LinkID = parsedDic.Item("linkID")
+    mlinkhubToken.linkID = parsedDic.Item("linkID")
     mlinkhubToken.usercode = parsedDic.Item("usercode")
     mlinkhubToken.expiration = parsedDic.Item("expiration")
     mlinkhubToken.ipaddress = parsedDic.Item("ipaddress")
@@ -754,6 +763,71 @@ Public Function FromUTF8(ByRef UTF8() As Byte) As String
     End If
 End Function
 
+Private Function HmacSha256(ByRef Data() As Byte) As Byte()
+    Dim lngErr As Long
+    Dim HmacInfo As HMAC_INFO
+    Dim lngDataLen As Long
+    Dim lngHashSize As Long
+    Dim bytHashValue() As Byte
+    
+    If hKey = 0 Then
+        Err.Raise vbObjectError Or &HD322&, _
+                  "HS1.HmacSha256", _
+                  "No key set, call InitHmac first"
+    ElseIf CryptCreateHash(hBaseProvider, CALG_HMAC, hKey, 0, hHmacHash) = 0 Then
+        lngErr = Err.LastDllError
+        DestroyHandles
+        Err.Raise vbObjectError Or &HD32A&, _
+                  "HS1.HmacSha256", _
+                  "Failed to create HMAC hash object, system error " _
+                & CStr(lngErr)
+    Else
+        HmacInfo.HashAlgId = CALG_SHA256
+        If CryptSetHashParam(hHmacHash, HP_HMAC_INFO, HmacInfo, 0&) = 0 Then
+            lngErr = Err.LastDllError
+            DestroyHandles
+            Err.Raise vbObjectError Or &HD32C&, _
+                      "HS1.HmacSha256", _
+                      "Failed to set HMAC_INFO hash param, system error " _
+                    & CStr(lngErr)
+        ElseIf CryptHashData(hHmacHash, _
+                             Data(LBound(Data)), _
+                             UBound(Data) - LBound(Data) + 1, _
+                             0&) = 0 Then
+            lngErr = Err.LastDllError
+            DestroyHandles
+            Err.Raise vbObjectError Or &HD32E&, _
+                      "HS1.HmacSha256", _
+                      "Failed to hash data, system error " _
+                    & CStr(lngErr)
+        Else
+            lngDataLen = 4 '4 bytes for Long length.
+            If CryptGetHashParam(hHmacHash, HP_HASHSIZE, lngHashSize, lngDataLen, 0&) = 0 Then
+                lngErr = Err.LastDllError
+                DestroyHandles
+                Err.Raise vbObjectError Or &HD332&, _
+                          "HS1.HmacSha256", _
+                          "Failed to obtain hash value length, system error " _
+                        & CStr(lngErr)
+            Else
+                lngDataLen = lngHashSize
+                ReDim bytHashValue(lngDataLen - 1)
+                If CryptGetHashParam(hHmacHash, HP_HASHVAL, bytHashValue(0), lngDataLen, 0&) = 0 Then
+                    lngErr = Err.LastDllError
+                    DestroyHandles
+                    Err.Raise vbObjectError Or &HD334&, _
+                              "HS1.HmacSha256", _
+                              "Failed to obtain hash value, system error " _
+                            & CStr(lngErr)
+                Else
+                    DestroyHandles
+                    HmacSha256 = bytHashValue
+                End If
+            End If
+        End If
+    End If
+End Function
+
 Private Function HmacSha1(ByRef Data() As Byte) As Byte()
     Dim lngErr As Long
     Dim HmacInfo As HMAC_INFO
@@ -857,6 +931,57 @@ Private Sub InitHmac(ByRef key() As Byte)
         End If
     End If
 End Sub
+
+Public Function SHA256(ByRef Data() As Byte) As Byte()
+    Dim hHash As Long
+    Dim lngDataLen As Long
+    Dim lngHashSize As Long
+    Dim bytHashValue() As Byte
+ 
+    If hBaseProvider = 0 Then
+        Err.Raise vbObjectError Or &HD352&, _
+                  "HS1.SHA256", _
+                  "No cryptographic Base provider context"
+    ElseIf CryptCreateHash(hBaseProvider, CALG_SHA256, 0&, 0&, hHash) = 0 Then
+        Err.Raise vbObjectError Or &HD354&, _
+                  "HS1.SHA256", _
+                  "Failed to create CryptoAPI Hash object, system error " _
+                & CStr(Err.LastDllError)
+    ElseIf CryptHashData(hHash, _
+                         Data(LBound(Data)), _
+                         UBound(Data) - LBound(Data) + 1, _
+                         0&) = 0 Then
+        CryptDestroyHash hHash
+        Err.Raise vbObjectError Or &HD356&, _
+                  "HS1.SHA256", _
+                  "Failed to hash data, system error " _
+                & CStr(Err.LastDllError)
+    Else
+        lngDataLen = 4 '4 bytes for Long length.
+        If CryptGetHashParam(hHash, HP_HASHSIZE, lngHashSize, lngDataLen, 0&) = 0 Then
+            CryptDestroyHash hHash
+            Err.Raise vbObjectError Or &HD358&, _
+                      "HS1.SHA256", _
+                      "Failed to obtain hash value length, system error " _
+                    & CStr(Err.LastDllError)
+        Else
+            lngDataLen = lngHashSize
+            ReDim bytHashValue(lngDataLen - 1)
+            
+            If CryptGetHashParam(hHash, HP_HASHVAL, bytHashValue(0), lngDataLen, 0&) = 0 Then
+                CryptDestroyHash hHash
+                Err.Raise vbObjectError Or &HD35A&, _
+                          "HS1.SHA256", _
+                          "Failed to obtain hash value, system error " _
+                        & CStr(Err.LastDllError)
+            Else
+                CryptDestroyHash hHash
+                SHA256 = bytHashValue
+            End If
+        End If
+    End If
+End Function
+
 
 Public Function SHA1(ByRef Data() As Byte) As Byte()
     Dim hHash As Long
@@ -1009,8 +1134,8 @@ Private Sub Class_Initialize()
     End With
     If CryptAcquireContext(hBaseProvider, _
                            0&, _
-                           StrPtr(MS_DEFAULT_PROVIDER), _
-                           PROV_RSA_FULL, _
+                           IIf(blnIsWinXP, StrPtr(MS_ENH_RSA_AED_XP), StrPtr(MS_ENH_RSA_AED_PROV)), _
+                           PROV_RSA_AES, _
                            CRYPT_VERIFYCONTEXT) = 0 Then
         Err.Raise vbObjectError Or &HD366&, _
                   "HS1.Class_Initialize", _
