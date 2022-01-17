@@ -22,8 +22,8 @@ Attribute VB_Exposed = False
 ' http://www.linkhub.co.kr
 ' Author : Kim Seongjun (pallet027@gmail.com)
 ' Written : 2014-04-22
-' Contributor : Jeong Yohan (code@linkhub.co.kr)
-' Updated : 2021-10-13
+' Contributor : Jeong Yohan (code@linkhubcorp.com)
+' Updated : 2022-01-17
 '
 ' Thanks for your interest.
 '
@@ -275,7 +275,7 @@ Private m_LastErrMessage As String
 
 
 
-Public Property Let linkID(ByVal value As String)
+Public Property Let LinkID(ByVal value As String)
     m_linkID = value
 End Property
 
@@ -435,7 +435,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
         
     mlinkhubToken.session_token = parsedDic.Item("session_token")
     mlinkhubToken.serviceID = parsedDic.Item("serviceID")
-    mlinkhubToken.linkID = parsedDic.Item("linkID")
+    mlinkhubToken.LinkID = parsedDic.Item("linkID")
     mlinkhubToken.usercode = parsedDic.Item("usercode")
     mlinkhubToken.expiration = parsedDic.Item("expiration")
     mlinkhubToken.ipaddress = parsedDic.Item("ipaddress")
