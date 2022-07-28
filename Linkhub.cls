@@ -23,7 +23,7 @@ Attribute VB_Exposed = False
 ' Author : Kim Seongjun
 ' Written : 2014-04-22
 ' Contributor : Jeong Yohan (code@linkhubcorp.com)
-' Updated : 2022-04-06
+' Updated : 2022-07-26
 '
 ' Thanks for your interest.
 '
@@ -324,6 +324,7 @@ On Error GoTo ErrHandler
         
     Set winhttp1 = CreateObject("MSXML2.XMLHTTP.6.0")
     Call winhttp1.Open("GET", getTargetURL(UseStaticIP, UseGAIP) + "/Time", False)
+    Call winhttp1.setRequestHeader("User-Agent", "VB6 LINKHUB SDK")
            
     winhttp1.Send
     
@@ -383,6 +384,7 @@ Public Function getToken(serviceID As String, access_id As String, scope As Coll
          
     Call winhttp1.setRequestHeader("x-lh-date", xDate)
     Call winhttp1.setRequestHeader("x-lh-version", API_VERSION)
+    Call winhttp1.setRequestHeader("User-Agent", "VB6 LINKHUB SDK")
          
     If ForwardIP <> "" Then
         Call winhttp1.setRequestHeader("x-lh-forwarded", ForwardIP)
@@ -463,6 +465,8 @@ Public Function GetPartnerURL(BearerToken As String, serviceID As String, TOGO A
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
     Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
+    Call winhttp1.setRequestHeader("User-Agent", "VB6 LINKHUB SDK")
+    
     winhttp1.Send
         
     Dim Response As String
@@ -507,6 +511,8 @@ Public Function GetBalance(BearerToken As String, serviceID As String, UseStatic
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
     Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
+    Call winhttp1.setRequestHeader("User-Agent", "VB6 LINKHUB SDK")
+    
     winhttp1.Send
         
     Dim Response As String
@@ -554,6 +560,7 @@ Public Function GetPartnerBalance(BearerToken As String, serviceID As String, Us
     
     Call winhttp1.setRequestHeader("Authorization", "Bearer " + BearerToken)
     Call winhttp1.setRequestHeader("Accept-Encoding", "gzip,deflate")
+    Call winhttp1.setRequestHeader("User-Agent", "VB6 LINKHUB SDK")
     
     winhttp1.Send
         
