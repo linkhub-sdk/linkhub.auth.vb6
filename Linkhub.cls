@@ -23,7 +23,7 @@ Attribute VB_Exposed = False
 ' Author : Kim Seongjun
 ' Written : 2014-04-22
 ' Contributor : Jeong Yohan (code@linkhubcorp.com)
-' Updated : 2022-07-26
+' Updated : 2022-10-31
 '
 ' Thanks for your interest.
 '
@@ -1124,12 +1124,6 @@ Private Sub Class_Initialize()
         Else
             If .dwMajorVersion = 5 And .dwMinorVersion >= 1 Then
                 blnIsWin5_1 = True 'XP or Win 2003 Server.
-                If .wProductType = 1 Then
-                    'XP 32 or 64 bit.
-                    blnIsWinXP = True
-                Else
-                    'Win 2003 Server.
-                End If
             ElseIf CCur(.dwMajorVersion) + CCur(.dwMinorVersion) / 1000@ >= 5.002@ Then
                 'Vista or later.
             Else
@@ -1139,16 +1133,24 @@ Private Sub Class_Initialize()
             End If
         End If
     End With
-    If CryptAcquireContext(hBaseProvider, _
+     If CryptAcquireContext(hBaseProvider, _
                            0&, _
-                           IIf(blnIsWinXP, StrPtr(MS_ENH_RSA_AED_XP), StrPtr(MS_ENH_RSA_AED_PROV)), _
+                           StrPtr(MS_ENH_RSA_AED_XP), _
                            PROV_RSA_AES, _
-                           CRYPT_VERIFYCONTEXT) = 0 Then
-        Err.Raise vbObjectError Or &HD366&, _
+                           CRYPT_VERIFYCONTEXT) <> 0 Then
+                           'XP 32 or 64 bit.
+                            blnIsWinXP = True
+        ElseIf CryptAcquireContext(hBaseProvider, _
+                           0&, _
+                           StrPtr(MS_ENH_RSA_AED_PROV), _
+                           PROV_RSA_AES, _
+                           CRYPT_VERIFYCONTEXT) <> 0 Then
+        Else
+             Err.Raise vbObjectError Or &HD366&, _
                   "HS1.Class_Initialize", _
                   "Failed to obtain CryptoAPI Base context, system error " _
                 & CStr(Err.LastDllError)
-    End If
+        End If
 End Sub
 
 Private Sub Class_Terminate()
