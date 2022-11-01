@@ -1133,7 +1133,7 @@ Private Sub Class_Initialize()
             End If
         End If
     End With
-     If CryptAcquireContext(hBaseProvider, _
+        If CryptAcquireContext(hBaseProvider, _
                            0&, _
                            StrPtr(MS_ENH_RSA_AED_XP), _
                            PROV_RSA_AES, _
@@ -1147,8 +1147,8 @@ Private Sub Class_Initialize()
                            CRYPT_VERIFYCONTEXT) <> 0 Then
         Else
              Err.Raise vbObjectError Or &HD366&, _
-                  "HS1.Class_Initialize", _
-                  "Failed to obtain CryptoAPI Base context, system error " _
+                "HS1.Class_Initialize", _
+                "Failed to obtain CryptoAPI Base context, system error " _
                 & CStr(Err.LastDllError)
         End If
 End Sub
